@@ -4,7 +4,7 @@ export async function scrapeLeaveRussia(browser) {
     waitUntil: "domcontentloaded",
   });
 
-  const data = await page.$$eval(".companies.cards .card", (cards) => {
+  const brands = await page.$$eval(".companies.cards .card", (cards) => {
     const parseBrand = (brand) => ({
       name:
         brand.querySelector(".annotation > div > div")?.innerText.trim() ?? null,
@@ -15,11 +15,27 @@ export async function scrapeLeaveRussia(browser) {
       country: brand.querySelector(".label.country a")?.innerText.trim() ?? null,
       alternative: null,
       source: brand.querySelector(".decision .date a")?.href ?? null,
+      category: brand.querySelector(".label.industry a")?.innerText.trim() ?? null
     });
 
     return cards.map(parseBrand);
   });
 
   await page.close();
-  return data;
+  const results = {};
+
+  for (const brand of brands) {
+    const cat = brand.category || "Uncategorized";
+
+    if (!results[cat]) results[cat] = [];
+
+    results[cat].push({
+      [brand.name]: {
+        ...brand,
+        category: undefined
+      },
+    });
+  }
+
+  return results;
 }
